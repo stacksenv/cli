@@ -103,37 +103,42 @@ func (s *DefaultClientService) GetContextDecryptedData(config *Config) ([]Contex
 	// Send request to server
 	resp, err := SendCLIRequest(config, s.httpClient)
 	if err != nil {
-		return result, fmt.Errorf("failed to send CLI request: %w", err)
+		return result, fmt.Errorf("unable to connect to stacksenv server at %s: %w. Please verify the server URL and network connectivity", config.ServerURL, err)
 	}
 	defer resp.Body.Close()
 
 	// Check HTTP status code
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return result, fmt.Errorf("HTTP error %d: %s", resp.StatusCode, string(body))
+		var errorDetails string
+		if len(body) > 0 {
+			errorDetails = fmt.Sprintf(" - Server response: %s", string(body))
+		}
+		return result, fmt.Errorf("server returned HTTP status %d (%s) for environment ID '%s' on branch '%s'%s. Please verify your credentials and environment configuration",
+			resp.StatusCode, http.StatusText(resp.StatusCode), config.ID, config.Branch, errorDetails)
 	}
 
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return result, fmt.Errorf("failed to read response body: %w", err)
+		return result, fmt.Errorf("unable to read response from server: %w. The connection may have been interrupted", err)
 	}
 
 	// Parse JSON response
 	var jsonData map[string]any
 	if err := json.Unmarshal(body, &jsonData); err != nil {
-		return result, fmt.Errorf("failed to unmarshal JSON: %w", err)
+		return result, fmt.Errorf("server returned invalid JSON response: %w. The server may be experiencing issues", err)
 	}
 
 	// Check for error in response
 	if errMsg, ok := jsonData["error"].(string); ok && errMsg != "" {
-		return result, fmt.Errorf("server error: %s", errMsg)
+		return result, fmt.Errorf("server reported an error: %s. Please check your environment ID, branch, and credentials", errMsg)
 	}
 
 	// Extract encrypted data
 	encryptedData, ok := jsonData["data"].(string)
 	if !ok || encryptedData == "" {
-		return result, fmt.Errorf("no encrypted data found in response")
+		return result, fmt.Errorf("server response is missing encrypted data. The response may be incomplete or the environment may not exist")
 	}
 
 	// Decrypt data - try multiple combinations to match server encryption
@@ -170,8 +175,8 @@ func (s *DefaultClientService) GetContextDecryptedData(config *Config) ([]Contex
 		return result, nil
 	}
 
-	// If all attempts fail, return error from the most likely combination
-	return nil, fmt.Errorf("failed to decrypt data: tried all common encryption key/AAD combinations")
+	// If all attempts fail, return comprehensive error message
+	return nil, fmt.Errorf("decryption failed: unable to decrypt the server response using the provided credentials. This typically indicates: 1) Incorrect Secret or SecretKey values, 2) The data was encrypted with a different encryption scheme, or 3) The encrypted data may be corrupted. Please verify your credentials match the environment configuration")
 }
 
 // GetContextDecryptedData is a convenience function that uses default implementations.

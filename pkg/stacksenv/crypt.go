@@ -116,16 +116,16 @@ func (s *DefaultCryptoService) Decrypt(
 	var result []ContextData[any]
 
 	if encrypted == "" {
-		return nil, errors.New("encrypted payload cannot be empty")
+		return nil, errors.New("encrypted payload is empty: cannot decrypt an empty data string")
 	}
 	if sharedSecret == "" {
-		return nil, errors.New("shared secret cannot be empty")
+		return nil, errors.New("encryption key is missing: the shared secret cannot be empty")
 	}
 
 	// Base64 decode
 	raw, err := base64.StdEncoding.DecodeString(encrypted)
 	if err != nil {
-		return nil, fmt.Errorf("base64 decode failed: %w", err)
+		return nil, fmt.Errorf("invalid base64 encoding in encrypted payload: %w. The data may be corrupted or in an unexpected format", err)
 	}
 
 	// Derive 32-byte key from shared secret
@@ -134,19 +134,19 @@ func (s *DefaultCryptoService) Decrypt(
 	// Create AES cipher
 	block, err := aes.NewCipher(key[:])
 	if err != nil {
-		return nil, fmt.Errorf("cipher init failed: %w", err)
+		return nil, fmt.Errorf("failed to initialize AES cipher: %w. This is an internal error and should not occur", err)
 	}
 
 	// Create GCM mode
 	gcm, err := cipher.NewGCM(block)
 	if err != nil {
-		return nil, fmt.Errorf("gcm init failed: %w", err)
+		return nil, fmt.Errorf("failed to initialize GCM encryption mode: %w. This is an internal error and should not occur", err)
 	}
 
 	// Extract nonce and ciphertext
 	nonceSize := gcm.NonceSize()
 	if len(raw) < nonceSize {
-		return nil, errors.New("invalid payload size: too short")
+		return nil, fmt.Errorf("encrypted payload is too short (expected at least %d bytes, got %d): the data may be incomplete or corrupted", nonceSize, len(raw))
 	}
 
 	nonce := raw[:nonceSize]
@@ -155,7 +155,7 @@ func (s *DefaultCryptoService) Decrypt(
 	// Decrypt with AAD
 	plaintext, err := gcm.Open(nil, nonce, ciphertext, []byte(aad))
 	if err != nil {
-		return nil, fmt.Errorf("decrypt/auth failed: %w", err)
+		return nil, fmt.Errorf("decryption or authentication failed: %w. This usually means the encryption key or AAD (Additional Authenticated Data) is incorrect", err)
 	}
 
 	// Unmarshal JSON

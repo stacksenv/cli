@@ -70,13 +70,13 @@ func (h *Handler) HandleStacksenvURLCLI(url string, args []string) error {
 			// Parse URL to get configuration
 			config, err := h.urlParser.ParseURL(url)
 			if err != nil {
-				return fmt.Errorf("failed to parse stacksenv URL: %w", err)
+				return fmt.Errorf("unable to parse stacksenv URL: %w. Please verify the URL format is correct: stacksenv://ID:SECRET:SECRET_KEY@SERVER_URL/BRANCH", err)
 			}
 
 			// Fetch and decrypt context data
 			properties, err = h.clientService.GetContextDecryptedData(&config)
 			if err != nil {
-				return fmt.Errorf("failed to fetch context data: %w", err)
+				return fmt.Errorf("unable to retrieve environment context data: %w", err)
 			}
 
 			// Log properties (masking sensitive values)
@@ -202,29 +202,29 @@ func HandleStacksENV(cnf *RequestConfig) ([]ContextData[any], error) {
 
 		// Validate required properties
 		if config.ID == "" {
-			return nil, fmt.Errorf("required property 'ID' is missing")
+			return nil, fmt.Errorf("configuration validation failed: 'ID' (environment identifier) is required but was not provided")
 		}
 		if config.Secret == "" {
-			return nil, fmt.Errorf("required property 'Secret' is missing")
+			return nil, fmt.Errorf("configuration validation failed: 'Secret' (authentication secret) is required but was not provided")
 		}
 		if config.SecretKey == "" {
-			return nil, fmt.Errorf("required property 'SecretKey' is missing")
+			return nil, fmt.Errorf("configuration validation failed: 'SecretKey' (encryption key) is required but was not provided")
 		}
 		if config.ServerURL == "" {
-			return nil, fmt.Errorf("required property 'ServerURL' is missing")
+			return nil, fmt.Errorf("configuration validation failed: 'ServerURL' (server address) is required but was not provided")
 		}
 		if config.Branch == "" {
-			return nil, fmt.Errorf("required property 'Branch' is missing")
+			return nil, fmt.Errorf("configuration validation failed: 'Branch' (environment branch name) is required but was not provided")
 		}
 
 	default:
-		return nil, fmt.Errorf("either URL or Config with required properties must be provided")
+		return nil, fmt.Errorf("configuration error: either a 'URL' (stacksenv://...) or a 'Config' struct with all required properties (ID, Secret, SecretKey, ServerURL, Branch) must be provided")
 	}
 
 	// Fetch and decrypt context data
 	properties, err := clientService.GetContextDecryptedData(config)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch context data: %w", err)
+		return nil, fmt.Errorf("unable to retrieve environment context data: %w", err)
 	}
 	if cnf.SetOSEnv {
 		for _, contextData := range properties {
