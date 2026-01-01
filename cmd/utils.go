@@ -5,11 +5,11 @@ import (
 	"log"
 	"strings"
 
-	homedir "github.com/mitchellh/go-homedir"
 	"github.com/samber/lo"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"github.com/stacksenv/cli/pkg/homedir"
 )
 
 // Generate the replacements for all environment variables. This allows to
