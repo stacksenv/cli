@@ -43,10 +43,7 @@ builds:
         goarm: "7"
     hooks:
       post:
-        - cmd: sh
-          args:
-            - -c
-            - 'if [ "{{ .Os }}" = "linux" ]; then strip {{ .Path }} && upx --best --lzma {{ .Path }}; fi'
+        - cmd: sh -c 'if [ "{{ .Os }}" = "linux" ]; then strip {{ .Path }} && upx --best --lzma {{ .Path }}; fi'
 
 archives:
   - name_template: "{{.Os}}-{{.Arch}}{{if .Arm}}v{{.Arm}}{{end}}-{{ .ProjectName }}"
