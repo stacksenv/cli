@@ -1,0 +1,58 @@
+version: 2
+
+project_name: stacksenv
+
+env:
+  - GO111MODULE=on
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    ldflags:
+      - -s -w -X github.com/stacksenv/cli/version.Version={{ .Version }} -X github.com/stacksenv/cli/version.CommitSHA={{ .ShortCommit }}
+    main: main.go
+    binary: stacksenv
+    goos:
+      - darwin
+      - linux
+      - windows
+      - freebsd
+    goarch:
+      - amd64
+      - "386"
+      - arm
+      - arm64
+      - riscv64
+    goarm:
+      - "5"
+      - "6"
+      - "7"
+    ignore:
+      - goos: darwin
+        goarch: "386"
+      - goos: freebsd
+        goarch: arm
+
+archives:
+  - name_template: "{{.Os}}-{{.Arch}}{{if .Arm}}v{{.Arm}}{{end}}-{{ .ProjectName }}"
+    formats: ["tar.gz"]
+    format_overrides:
+      - goos: windows
+        formats: ["zip"]
+
+homebrew_casks:
+  - name: stacksenv
+    repository:
+      owner: stacksenv
+      name: homebrew-tap
+    commit_author:
+      name: stacksenv Robot
+      email: robot@stacksenv.org
+    homepage: https://github.com/stacksenv/cli 
+    description: Stacksenv is a CLI for managing your Environment Variables
+    hooks:
+      post:
+        install: |
+          if system_command("/usr/bin/xattr", args: ["-h"]).exit_status == 0
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/stacksenv"]
+          end
