@@ -43,7 +43,7 @@ builds:
         goarm: "7"
     hooks:
       post:
-        - cmd: sh -c 'if [ "{{ .Os }}" = "linux" ]; then if [ "{{ .Arch }}" = "amd64" ] || [ "{{ .Arch }}" = "386" ]; then strip {{ .Path }} || true; fi; upx --best --lzma {{ .Path }}; fi'
+        - cmd: sh -c 'if [ "{{ .Os }}" = "linux" ]; then if [ "{{ .Arch }}" = "amd64" ] || [ "{{ .Arch }}" = "386" ]; then strip {{ .Path }} || true; fi; if [ "{{ .Arch }}" != "riscv64" ]; then upx --best --lzma {{ .Path }}; fi; fi'
 
 archives:
   - name_template: "{{.Os}}-{{.Arch}}{{if .Arm}}v{{.Arm}}{{end}}-{{ .ProjectName }}"
