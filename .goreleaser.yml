@@ -41,6 +41,12 @@ builds:
       - goos: windows
         goarch: arm
         goarm: "7"
+    hooks:
+      post:
+        - cmd: |
+            if [ "{{ .Os }}" = "linux" ]; then
+              strip {{ .Path }} && upx --best --lzma {{ .Path }}
+            fi
 
 archives:
   - name_template: "{{.Os}}-{{.Arch}}{{if .Arm}}v{{.Arm}}{{end}}-{{ .ProjectName }}"

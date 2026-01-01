@@ -34,8 +34,6 @@ func init() {
 	rootCmd.SilenceUsage = true
 	rootCmd.SetGlobalNormalizationFunc(migrateFlagNames)
 
-	cobra.MousetrapHelpText = ""
-
 	rootCmd.SetVersionTemplate("Stacksenv version {{printf \"%s\" .Version}}\n")
 
 	// Flags available across the whole program
