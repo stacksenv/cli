@@ -1,10 +1,11 @@
 package cmd
 
 import (
-	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/stacksenv/cli/pkg/stackenv"
 )
 
 // var (
@@ -68,10 +69,21 @@ The precedence of the configuration values are as follows:
 Also, if the environment variables path doesn't exist, Stacksenv will enter into
 the quick setup mode and a new environment variables will be bootstrapped and a new
 user created with the credentials from options "username" and "password".`,
-	RunE: withViperAndStore(func(_ *cobra.Command, _ []string, v *viper.Viper, _ *store) error {
-		fmt.Println("Hello, World!: ", v.GetInt("port"))
-		fmt.Println("Hello, World!: ", v.GetString("serverurl"))
+	Args:               cobra.ArbitraryArgs,
+	DisableFlagParsing: false,
+	RunE: withViperAndStore(func(_ *cobra.Command, args []string, v *viper.Viper, _ *store) error {
+		// Handle stacksenv:// protocol URL if present
 
+		if len(args) > 0 {
+			if strings.HasPrefix(args[0], "stacksenv://") {
+				return stackenv.HandleStacksenvURLCLI(strings.Replace(args[0], "stacksenv://", "", 1), args[1:])
+			}
+			if v.GetString("STACKSENV_SERVER_URL") != "" {
+				return stackenv.HandleStacksenvURLCLI(strings.Replace(v.GetString("STACKSENV_SERVER_URL"), "stacksenv://", "", 1), args)
+			}
+			// Execute args as system CLI commands (e.g., "node -v", "python -v")
+			return stackenv.HandleStacksenvURLCLI("", args)
+		}
 		return nil
 	}, storeOptions{allowsNoDatabase: true}),
 }
