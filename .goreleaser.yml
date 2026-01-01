@@ -43,7 +43,7 @@ builds:
         goarm: "7"
     hooks:
       post:
-        - cmd: |
+        - sh: |
             if [ "{{ .Os }}" = "linux" ]; then
               strip {{ .Path }} && upx --best --lzma {{ .Path }}
             fi
@@ -62,7 +62,7 @@ homebrew_casks:
       name: homebrew-tap
     commit_author:
       name: stacksenv Robot
-      email: robot@stacksenv.org
+      email: robot@stacksenv.com
     homepage: https://github.com/stacksenv/cli 
     description: Stacksenv is a CLI for managing your Environment Variables
     hooks:
