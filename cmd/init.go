@@ -16,7 +16,7 @@ var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize new project",
 	Long:  `Initialize a new project by creating a .stacksenv/config.json file in the current directory.`,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(_ *cobra.Command, _ []string) error {
 		if err := createLocalConfig(); err != nil {
 			return err
 		}
