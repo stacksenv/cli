@@ -165,3 +165,16 @@ func dirWindows() (string, error) {
 
 	return home, nil
 }
+
+func CreateConfigFile(path string) error {
+
+	if err := os.MkdirAll(path, 0755); err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(filepath.Join(path, "config.yaml"), []byte(""), 0644); err != nil {
+		return err
+	}
+
+	return nil
+}
