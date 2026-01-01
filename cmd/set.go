@@ -15,7 +15,7 @@ var setCmd = &cobra.Command{
 	Short: "Set a value for a key",
 	Long:  `Set a value for a key.`,
 	// Args:  cobra.ExactArgs(2),
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, args []string) {
 		fmt.Println("set called with args:", args)
 	},
 }
