@@ -5,7 +5,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/stacksenv/cli/pkg/stackenv"
+	"github.com/stacksenv/cli/pkg/stacksenv"
 )
 
 // var (
@@ -76,13 +76,18 @@ user created with the credentials from options "username" and "password".`,
 
 		if len(args) > 0 {
 			if strings.HasPrefix(args[0], "stacksenv://") {
-				return stackenv.HandleStacksenvURLCLI(strings.Replace(args[0], "stacksenv://", "", 1), args[1:])
+				return stacksenv.HandleStacksenvURLCLI(args[0], args[1:])
 			}
-			if v.GetString("STACKSENV_SERVER_URL") != "" {
-				return stackenv.HandleStacksenvURLCLI(strings.Replace(v.GetString("STACKSENV_SERVER_URL"), "stacksenv://", "", 1), args)
+			if v.GetString("stacksenv_url") != "" {
+				return stacksenv.HandleStacksenvURLCLI(v.GetString("stacksenv_url"), args)
 			}
+			exists, url := checkSeperatedVariables(v)
+			if exists {
+				return stacksenv.HandleStacksenvURLCLI(url, args)
+			}
+
 			// Execute args as system CLI commands (e.g., "node -v", "python -v")
-			return stackenv.HandleStacksenvURLCLI("", args)
+			return stacksenv.HandleStacksenvURLCLI("", args)
 		}
 		return nil
 	}, storeOptions{allowsNoDatabase: true}),

@@ -1,4 +1,4 @@
-package stackenv
+package stacksenv
 
 import (
 	"fmt"

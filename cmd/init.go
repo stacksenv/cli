@@ -18,6 +18,10 @@ var initCmd = &cobra.Command{
 	Long:  `Initialize a new project by creating a .stacksenv/config.json file in the current directory.`,
 	RunE: func(_ *cobra.Command, _ []string) error {
 		if err := createLocalConfig(); err != nil {
+			// If user cancelled, don't return error, just exit silently
+			if err.Error() == "operation cancelled by user" {
+				return nil
+			}
 			return err
 		}
 

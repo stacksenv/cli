@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"os"
+	"slices"
 	"strings"
 )
 
@@ -17,20 +18,9 @@ func Execute() error {
 		// If first arg starts with stacksenv://, disable flag parsing
 		if strings.HasPrefix(firstArg, "stacksenv://") {
 			rootCmd.DisableFlagParsing = true
-		} else {
-			// Check if first arg is a known stacksenv command
-			isKnownCommand := false
-			for _, cmd := range knownCommands {
-				if firstArg == cmd {
-					isKnownCommand = true
-					break
-				}
-			}
-
+		} else if !slices.Contains(knownCommands, firstArg) && !strings.HasPrefix(firstArg, "-") {
 			// If it's not a known command, disable flag parsing to pass args to system commands
-			if !isKnownCommand && !strings.HasPrefix(firstArg, "-") {
-				rootCmd.DisableFlagParsing = true
-			}
+			rootCmd.DisableFlagParsing = true
 		}
 	}
 

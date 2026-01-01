@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -252,7 +253,26 @@ func createLocalConfig() error {
 
 	// Check if config file already exists
 	if _, err := os.Stat(configPath); err == nil {
-		return fmt.Errorf("local config file already exists: %s", configPath)
+		// Prompt user for confirmation to recreate
+		fmt.Printf("Local config file already exists at: %s\n", configPath)
+		fmt.Print("Do you want to recreate it? (y/n): ")
+
+		reader := bufio.NewReader(os.Stdin)
+		response, err := reader.ReadString('\n')
+		if err != nil {
+			return fmt.Errorf("failed to read user input: %w", err)
+		}
+
+		response = strings.TrimSpace(strings.ToLower(response))
+		if response != "y" && response != "yes" {
+			fmt.Println("Operation cancelled.")
+			return fmt.Errorf("operation cancelled by user")
+		}
+
+		// Remove existing config file
+		if err := os.Remove(configPath); err != nil {
+			return fmt.Errorf("failed to remove existing config file: %w", err)
+		}
 	}
 
 	// Create .stacksenv directory if it doesn't exist
@@ -260,11 +280,23 @@ func createLocalConfig() error {
 		return fmt.Errorf("failed to create config directory: %w", err)
 	}
 
-	// Create default config with serverurl and sessions properties
+	// Create default config with serverurl from global config
 	defaultConfig := map[string]interface{}{
-		"serverurl": config.DefaultServerURL,
-		"sessions":  []interface{}{},
+		"_stacksenv_id":            "",
+		"_stacksenv_key":           "",
+		"_stacksenv_secret":        "",
+		"_stacksenv_branch":        "",
+		"_stacksenv_disable_https": false,
 	}
+
+	// Get serverurl from global config if available
+	globalConfig, _, err := readGlobalConfig()
+	if err == nil {
+		if serverurl, ok := globalConfig["serverurl"]; ok {
+			defaultConfig["serverurl"] = serverurl
+		}
+	}
+
 	configJSON, err := json.MarshalIndent(defaultConfig, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal config: %w", err)
@@ -404,4 +436,38 @@ func withViperAndStore(fn func(cmd *cobra.Command, args []string, v *viper.Viper
 
 		return fn(cmd, args, v, store)
 	}
+}
+
+func checkSeperatedVariables(v *viper.Viper) (bool, string) {
+	id := v.GetString("stacksenv_id")
+	key := v.GetString("stacksenv_key")
+	secret := v.GetString("stacksenv_secret")
+	serverURL := v.GetString("serverurl")
+	branch := v.GetString("stacksenv_branch")
+
+	// Check if all required parameters exist (ID, KEY, SECRET are mandatory)
+	if id == "" || key == "" || secret == "" {
+		return false, ""
+	}
+
+	// If serverURL is not provided, try to get it from config
+	if serverURL == "" {
+		serverURL = v.GetString("serverurl")
+		// If still empty, use default
+		if serverURL == "" {
+			serverURL = config.DefaultServerURL
+		}
+	}
+
+	// If branch is not provided, use empty string (will default to "/" in URL)
+	if branch == "" {
+		branch = "dev" // Default branch, or could be empty
+	}
+
+	disableHTTPS := v.GetBool("stacksenv_disable_https")
+
+	// Construct URL: stacksenv://ID:KEY:SECRET@SERVER_URL/BRANCH?disable_https=true
+	// ParseURL requires format: ID:KEY:SECRET@SERVER_URL/BRANCH?disable_https=true
+	url := fmt.Sprintf("stacksenv://%s:%s:%s@%s/%s?disable_https=%t", id, secret, key, serverURL, branch, disableHTTPS)
+	return true, url
 }
